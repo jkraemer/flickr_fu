@@ -1,3 +1,4 @@
+require 'yaml'
 module Flickr
   def self.new(*params)
     Flickr::Base.new(*params)
@@ -65,8 +66,10 @@ module Flickr
       
       if xm[:stat] == 'ok'
         xm
+      elsif Errors::ERROR_CODES.include?(xm.err[:code].to_i)
+        raise Errors::ERROR_CODES[xm.err[:code].to_i].new, "#{xm.err[:code]}: #{xm.err[:msg]}"
       else
-        raise "#{xm.err[:code]}: #{xm.err[:msg]}"
+        raise Errors::UnknownError.new, "#{xm.err[:code]}: #{xm.err[:msg]}"
       end
     end
     
