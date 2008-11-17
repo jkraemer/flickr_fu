@@ -142,6 +142,18 @@ class Flickr::Photos::Photo
     @original_secret
   end
 
+  def public?
+    is_public == "1"
+  end
+
+  def friend?
+    is_friend == "1"
+  end
+
+  def family?
+    is_family == "1"
+  end
+  
   def owner_username # :nodoc:
     attach_info
     @owner_username
