@@ -2,7 +2,10 @@ rdoc
 .DS_Store
 *.yml
 *.gem
-demo.rb
+demo*
 *~
 *.sw*
-
+.specification
+nbproject/
+doc/rspec_report.html
+coverage/

@@ -1,10 +1,9 @@
 # wrapping class to hold an flickr photo
-# 
 class Flickr::Photos::Photo
   attr_accessor :id, :owner, :secret, :server, :farm, :title, :is_public, :is_friend, :is_family # standard attributes
   attr_accessor :license_id, :uploaded_at, :taken_at, :owner_name, :icon_server, :original_format, :updated_at, :geo, :tags, :machine_tags, :o_dims, :views, :media # extra attributes
   attr_accessor :info_added, :description, :original_secret, :owner_username, :owner_realname, :url_photopage, :notes # info attributes
-  attr_accessor :comments_added, :comments # comment attributes
+  attr_accessor :comments # comment attributes
   
   # create a new instance of a flickr photo.
   # 
@@ -20,8 +19,13 @@ class Flickr::Photos::Photo
     end
   end
 
+  # Alias to image_url method
+  def url(size = :medium)
+    image_url(size)
+  end
+
   # retreive the url to the image stored on flickr
-  # 
+  #
   # == Params
   # * size (Optional)
   #     the size of the image to return. Optional sizes are:
@@ -31,9 +35,30 @@ class Flickr::Photos::Photo
   #       :medium - 500 on longest side
   #       :large - 1024 on longest side (only exists for very large original images)
   #       :original - original image, either a jpg, gif or png, depending on source format
-  # 
-  def url(size = :medium)
-    size_hash[size.to_s].source if size_hash.has_key? size.to_s
+  #
+  def image_url(size = :medium)
+	# It turns out that flickr always stores all the sizes of the picture even when getSizes call returns otherwise.
+	# Not calling getSizes is also very important for performance reasons.
+	# Retrieving 30 search results means calling the API 31 times if you call getSizes every time.
+	# Mind that you still need to call getSizes if you go out for the original image.
+	if size == :original
+	  size_hash[size.to_s].source if size_hash.has_key? size.to_s
+	else
+	  key = "_#{size_key(size.to_sym)}"
+	  key = "" if key == "_"
+	  "http://farm#{farm}.static.flickr.com/#{server}/#{id}_#{secret}#{key}.jpg"
+	end
+  end
+
+  def photopage_url
+	# Keeping the same convention as image_url (foo_url)
+	url_photopage
+  end
+
+  def video_url
+    if size_hash['video player']
+      size_hash['video player'].source
+    end
   end
 
   # save the current photo to the local computer
@@ -51,7 +76,7 @@ class Flickr::Photos::Photo
   #       :original - original image, either a jpg, gif or png, depending on source format
   # 
   def save_as(filename, size = :medium)
-    format = size.to_sym == :original ? self.original_format : 'jpg'
+    format = size.to_sym == :original ? (self.original_format || 'jpg') : 'jpg'
     filename = "#{filename}.#{format}"
 
     if File.exists?(filename) or not self.url(size)
@@ -71,7 +96,7 @@ class Flickr::Photos::Photo
   #     comma seperated list of tags
   # 
   def add_tags(tags)
-    rsp = @flickr.send_request('flickr.photos.addTags', {:photo_id => self.id, :tags => tags}, :post)
+    @flickr.send_request('flickr.photos.addTags', {:photo_id => self.id, :tags => tags}, :post)
     true
   end
   
@@ -82,7 +107,7 @@ class Flickr::Photos::Photo
   #     text of the comment
   #
   def add_comment(message)
-    rsp = @flickr.send_request('flickr.photos.comments.addComment', {:photo_id => self.id, :comment_text => message}, :post)
+    @flickr.send_request('flickr.photos.comments.addComment', {:photo_id => self.id, :comment_text => message}, :post)
     true
   end
   
@@ -101,7 +126,7 @@ class Flickr::Photos::Photo
   #     The height of the note
   #     
   def add_note(message, x, y, w, h)
-    rsp = @flickr.send_request('flickr.photos.notes.add', {:photo_id => self.id, :note_x => x, :note_y => y, :note_w => w, :note_h => h, :note_text => message}, :post)
+    @flickr.send_request('flickr.photos.notes.add', {:photo_id => self.id, :note_x => x, :note_y => y, :note_w => w, :note_h => h, :note_text => message}, :post)
     true
   end
   
@@ -112,7 +137,7 @@ class Flickr::Photos::Photo
   #     The amount of degrees by which to rotate the photo (clockwise) from it's current orientation. Valid values are 90, 180 and 270.
   # 
   def rotate(degrees)
-    rsp = @flickr.send_request('flickr.photos.transform.rotate', {:photo_id => self.id, :degrees => degrees}, :post)
+    @flickr.send_request('flickr.photos.transform.rotate', {:photo_id => self.id, :degrees => degrees}, :post)
     true
   end
   
@@ -128,7 +153,7 @@ class Flickr::Photos::Photo
   # * license_id (Required)
   #     The license to apply, or 0 (zero) to remove the current license.
   def set_license(license_id)
-    rsp = @flickr.send_request('flickr.photos.licenses.setLicense', {:photo_id => self.id, :license_id => license_id}, :post)
+    @flickr.send_request('flickr.photos.licenses.setLicense', {:photo_id => self.id, :license_id => license_id}, :post)
     true
   end
   
@@ -170,8 +195,26 @@ class Flickr::Photos::Photo
   end
 
   def comments # :nodoc:
-    attach_comments
-    @comments
+    @comments ||= begin
+      if @comment_count == 0
+        self.comments = []
+      else
+        rsp = @flickr.send_request('flickr.photos.comments.getList', :photo_id => self.id)
+        
+        self.comments = []
+        
+        rsp.comments.comment.each do |comment|
+          self.comments << Flickr::Photos::Comment.new(:id => comment[:id],
+            :comment => comment.to_s,
+            :author => comment[:author],
+            :author_name => comment[:authorname],
+            :permalink => comment[:permalink],
+            :created_at => (Time.at(comment[:datecreate].to_i) rescue nil))
+        end
+      end
+
+      self.comments
+    end
   end
   
   def sizes # :nodoc:
@@ -209,12 +252,12 @@ class Flickr::Photos::Photo
   # convert the size to the key used in the flickr url
   def size_key(size)
     case size.to_sym
-    when :square : 's'
-    when :thumb, :thumbnail : 't'
-    when :small : 'm'
-    when :medium : '-'
-    when :large : 'b'
-    when :original : 'o'
+    when :square then 's'
+    when :thumb, :thumbnail then 't'
+    when :small then 'm'
+    when :medium then ''
+    when :large then 'b'
+    when :original then 'o'
     else ''
     end
   end
@@ -225,7 +268,7 @@ class Flickr::Photos::Photo
       rsp = @flickr.send_request('flickr.photos.getInfo', :photo_id => self.id, :secret => self.secret)
 
       self.info_added = true
-      self.description = rsp.photo.description.to_s
+      self.description = rsp.photo.description.to_s.strip
       self.original_secret = rsp.photo[:originalsecret]
       self.owner_username = rsp.photo.owner[:username]
       self.owner_realname = rsp.photo.owner[:realname]
@@ -236,36 +279,14 @@ class Flickr::Photos::Photo
 
       rsp.photo.notes.note.each do |note|
         self.notes << Flickr::Photos::Note.new(:id => note[:id],
-                               :note => note.to_s,
-                               :author => note[:author],
-                               :author_name => note[:authorname],
-                               :x => note[:x],
-                               :y => note[:y],
-                               :width => note[:w],
-                               :height => note[:h])
+		  :note => note.to_s,
+		  :author => note[:author],
+		  :author_name => note[:authorname],
+		  :x => note[:x],
+		  :y => note[:y],
+		  :width => note[:w],
+		  :height => note[:h])
       end if rsp.photo.notes.note
     end
-  end
-
-  # loads comments once they have been requested
-  def attach_comments
-    if @comment_count == 0
-      self.comments = []
-      self.comments_added = true
-    elsif not self.comments_added
-      rsp = @flickr.send_request('flickr.photos.comments.getList', :photo_id => self.id)
-
-      self.comments = []
-      self.comments_added = true
-
-      rsp.comments.comment.each do |comment|
-        self.comments << Flickr::Photos::Comment.new(:id => comment[:id],
-                                     :comment => comment.to_s,
-                                     :author => comment[:author],
-                                     :author_name => comment[:authorname],
-                                     :permalink => comment[:permalink],
-                                     :created_at => (Time.at(comment[:datecreate].to_i) rescue nil))
-      end
-    end        
   end
 end

@@ -111,6 +111,8 @@ class Flickr::Photos < Flickr::Base
   #     Number of photos to return per page. If this argument is omitted, it defaults to 100. The maximum allowed value is 500.
   # * page (Optional)
   #     The page of results to return. If this argument is omitted, it defaults to 1.
+  # * media (Optional)
+  #     The type of media to search for. 'photo', 'video', or 'both' are allowed arguments, with 'both' being the default.
   # 
   def search(options)
     options.merge!({:extras => "license,date_upload,date_taken,owner_name,icon_server,original_format,last_update,geo,tags,machine_tags,o_dims,views,media"})
@@ -143,6 +145,8 @@ class Flickr::Photos < Flickr::Base
   #     Number of photos to return per page. If this argument is omitted, it defaults to 100. The maximum allowed value is 500.
   # * page (Optional)
   #     The page of results to return. If this argument is omitted, it defaults to 1.
+  # * media (Optional)
+  #     The type of media to search for. 'photo', 'video', or 'both' are allowed arguments, with 'both' being the default.
   # 
   def get_recent(options)
     options.merge!({:extras => "license,date_upload,date_taken,owner_name,icon_server,original_format,last_update,geo,tags,machine_tags,o_dims,views,media"})
@@ -187,7 +191,25 @@ class Flickr::Photos < Flickr::Base
   end
   
   def licenses
-    @licenses ||= get_licenses
+    @licenses ||= begin
+      rsp = @flickr.send_request('flickr.photos.licenses.getInfo')
+      
+      returning Hash.new do |licenses|
+        rsp.licenses.license.each do |license|
+          licenses[license[:id].to_i] = Flickr::Photos::License.new(:id => license[:id].to_i, :name => license[:name], :url => license[:url])
+        end
+      end
+    end
+  end
+  
+  # Returns a Flickr::Photos::Photo object of the given id.
+  # Raises an error if photo not found
+  def find_by_id(photo_id)
+    rsp = @flickr.send_request('flickr.photos.getInfo', :photo_id => photo_id)
+    Photo.new(@flickr, :id => rsp.photo[:id].to_i, :owner => rsp.photo.owner,
+      :secret => rsp.photo[:secret], :server => rsp.photo[:server].to_i, :farm => rsp.photo[:farm], 
+      :title => rsp.photo.title,
+      :is_public => rsp.photo.visibility[:public], :is_friend => rsp.photo.visibility[:is_friend], :is_family => rsp.photo.visibility[:is_family])
   end
   
   protected
@@ -216,13 +238,4 @@ class Flickr::Photos < Flickr::Base
      :media => photo[:media]}
   end
   
-  def get_licenses
-    rsp = @flickr.send_request('flickr.photos.licenses.getInfo')
-    
-    returning Hash.new do |licenses|
-      rsp.licenses.license.each do |license|
-        licenses[license[:id].to_i] = Flickr::Photos::License.new(:id => license[:id].to_i, :name => license[:name], :url => license[:url])
-      end
-    end
-  end
 end

@@ -1,4 +1,3 @@
-require 'yaml'
 module Flickr
   def self.new(*params)
     Flickr::Base.new(*params)
@@ -68,22 +67,15 @@ module Flickr
       options.merge!(:api_key => @api_key, :method => method)
       sign_request(options)
       
-      if http_method == :get
-        api_call = endpoint + "?" + options.collect{|k,v| "#{k}=#{CGI.escape(v.to_s)}"}.join('&')
-        rsp = Net::HTTP.get(URI.parse(api_call))
-      else
-        rsp = Net::HTTP.post_form(URI.parse(endpoint), options).body
-      end
+      rsp = request_over_http(options, http_method, endpoint)
       
       rsp = '<rsp stat="ok"></rsp>' if rsp == ""
       xm = XmlMagic.new(rsp)
       
       if xm[:stat] == 'ok'
         xm
-      elsif Errors::ERROR_CODES.include?(xm.err[:code].to_i)
-        raise Errors::ERROR_CODES[xm.err[:code].to_i].new, "#{xm.err[:code]}: #{xm.err[:msg]}"
       else
-        raise Errors::UnknownError.new, "#{xm.err[:code]}: #{xm.err[:msg]}"
+        raise Flickr::Errors.error_for(xm.err[:code], xm.err[:msg])
       end
     end
     
@@ -115,5 +107,21 @@ module Flickr
       
     # creates and/or returns the Flickr::Uploader object
     def uploader() @uploader ||= Flickr::Uploader.new(self) end
+
+    # creates and/or returns the Flickr::Contacts object
+    def contacts() @contacts ||= Flickr::Contacts.new(self) end
+            
+    protected
+    
+    # For easier testing. You can mock this method with a XML file you're expecting to receive
+    def request_over_http(options, http_method, endpoint)
+      if http_method == :get
+        api_call = endpoint + "?" + options.collect{|k,v| "#{k}=#{CGI.escape(v.to_s)}"}.join('&')
+        Net::HTTP.get(URI.parse(api_call))
+      else
+        Net::HTTP.post_form(URI.parse(endpoint), options).body
+      end
+    end
+    
   end
 end

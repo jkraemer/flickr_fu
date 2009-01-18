@@ -3,6 +3,7 @@ require 'xml_magic'
 require 'net/http'
 require 'cgi'
 require 'uri'
+require 'open-uri'
 require 'mime/types'
 require 'digest/md5'
 require 'yaml'
@@ -10,7 +11,7 @@ require 'time'
 require 'date'
 
 # base must load first
-%w(base errors test auth token photos photo photo_response comment note size uploader status people person license).each do |file|
+%w(base test auth token photos photo photo_response comment note size uploader status people person license errors contacts contact).each do |file|
   require File.join(File.dirname(__FILE__), 'flickr', file)
 end
 
