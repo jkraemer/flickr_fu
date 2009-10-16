@@ -1,6 +1,5 @@
 rdoc
 .DS_Store
-*.yml
 *.gem
 demo*
 *~
@@ -8,4 +7,7 @@ demo*
 .specification
 nbproject/
 doc/rspec_report.html
+doc/rspec_profile.txt
+spec/spec.local.opts
 coverage/
+pkg/

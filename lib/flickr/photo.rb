@@ -24,6 +24,24 @@ class Flickr::Photos::Photo
     image_url(size)
   end
 
+  # returns an instance of Flickr::Photos::Size for the required size
+  #
+  # Params
+  #  * size (Optional)
+  #    the size of the size instance to return.  Optional sizes are:
+  #       :square - square 75x75
+  #       :thumbnail - 100 on longest side
+  #       :small - 240 on longest side
+  #       :medium - 500 on longest side
+  #       :large - 1024 on longest side (only exists for very large original images)
+  #       :original - original image, either a jpg, gif or png, depending on source format
+  # Examples
+  #       Photo.photo_size(:square).source
+  #       Photo.photo_size(:large).width
+  def photo_size(size = :medium)
+    size_hash.fetch(size.to_s, size_hash['medium'])
+  end
+
   # retreive the url to the image stored on flickr
   #
   # == Params
@@ -145,6 +163,29 @@ class Flickr::Photos::Photo
   # 
   def license
     @flickr.photos.licenses[self.license_id]
+  end
+
+  # Returns the location of the photo (if available)
+  # or nil if photo is not geo-tagged.
+  def location
+    begin
+      @location ||= @flickr.photos.geo.get_location(self.id)
+    rescue Flickr::Error => e
+      if e.code == 2 # 2: Photo has no location information.
+        return nil
+      else
+        raise e
+      end
+    end
+  end
+
+  def location= location
+    if !location.nil?
+      @flickr.photos.geo.set_location(self.id, location.latitude, location.longitude, location.accuracy)
+    else
+      @flickr.photos.geo.remove_location(self.id)
+    end
+    @location = location
   end
   
   # Sets the license for a photo.

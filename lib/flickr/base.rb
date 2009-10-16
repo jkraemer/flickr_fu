@@ -22,31 +22,49 @@ module Flickr
     #     Flickr::Auth::Token object
     #
     # or:
+    # 
     # * config_file (Required)
     #     yaml file to load configuration from
-    # * token_cache (Optional)
-    #     location of the token cache file. This will override the setting in the config file
-    # 
+    # * options (Optional)
+    #     hash containing any of the two options
+    #     * token_cache
+    #       location of the token cache file. This will override the setting in the config file
+    #     * environment
+    #       section in the config file that flickr_fu should look for the API key and secret
+    #       Useful when using with Rails
+    #
     # Config Example (yaml file)
     # ---
-    # key: YOUR_API_KEY
-    # secret: YOUR_API_SECRET
-    # token_cache: token.yml
-    # 
-    def initialize(config_hash_or_file, token_cache = nil)
-      if config_hash_or_file.is_a? Hash
-        @api_key = config_hash_or_file[:key]
-        @api_secret = config_hash_or_file[:secret]
-        @token = config_hash_or_file[:token]
-        raise 'config_hash must contain api key and secret' unless @api_key and @api_secret
-      else 
-        config = YAML.load_file(config_hash_or_file)
-      
-        @api_key = config['key']
-        @api_secret = config['secret']
-        @token_cache = token_cache || config['token_cache']
-        raise 'flickr config file must contain an api key and secret' unless @api_key and @api_secret
+    #   key: YOUR_API_KEY
+    #   secret: YOUR_API_SECRET
+    #   token_cache: token.yml
+    #
+    # Example config file with two environments:
+    # ---
+    #   development:
+    #     key: YOUR_DEVELOPMENT_API_KEY
+    #     secret: YOUR_DEVELOPMENT_API_SECRET
+    #   production:
+    #     key: YOUR_PRODUCTION_API_KEY
+    #     secret: YOUR_PRODUCTION_API_SECRET
+    def initialize(config_param, options_param = {})
+      if options_param.is_a? String
+        options = {:token_cache => options_param}
+      else
+        options = options_param
       end
+      if config_param.is_a? String
+        config = YAML.load_file(config_param)
+        config = config[options[:environment]] if options.has_key? :environment
+      else
+        config = config_param
+      end
+      @api_key = config[:key] || config["key"]
+      @api_secret = config[:secret] || config["secret"]
+      @token_cache = options[:token_cache] || config["token_cache"]
+      @token = config[:token] || options[:token]
+      raise 'config file must contain an api key and secret' unless @api_key and @api_secret
+      raise 'you cannot specify both the token and token_cache' if @token and @token_cache
     end
 
     # sends a request to the flickr REST api
@@ -75,7 +93,7 @@ module Flickr
       if xm[:stat] == 'ok'
         xm
       else
-        raise Flickr::Errors.error_for(xm.err[:code], xm.err[:msg])
+        raise Flickr::Errors.error_for(xm.err[:code].to_i, xm.err[:msg])
       end
     end
     
@@ -99,6 +117,9 @@ module Flickr
     # creates and/or returns the Flickr::Photos object
     def photos() @photos ||= Flickr::Photos.new(self) end
       
+    # creates and/or returns the Flickr::Photos object
+    def photosets() @photosets ||= Flickr::Photosets.new(self) end
+      
     # creates and/or returns the Flickr::People object
     def people() @people ||= Flickr::People.new(self) end
       
@@ -110,6 +131,9 @@ module Flickr
 
     # creates and/or returns the Flickr::Contacts object
     def contacts() @contacts ||= Flickr::Contacts.new(self) end
+
+    # creates and/or returns the Flickr::Urls object
+    def urls() @urls ||= Flickr::Urls.new(self) end
             
     protected
     
