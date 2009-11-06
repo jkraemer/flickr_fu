@@ -75,6 +75,7 @@ token_cache: "token_cache.yml"
 
   flickr.auth.token also contains the nsid and username, this
   example only stores the token and no other userdata.
+  All you need in the views is a button or link to FlickrController.create
 
   require 'flickr_fu'
   class FlickrController < ActionController::Base
@@ -90,6 +91,40 @@ token_cache: "token_cache.yml"
     def something_else_with_flickr
       flickr = Flickr.new(YAML.load_file('flickr.yml').merge(:token => current_user.flickr_token))
       # now you have full access on the user's data :)
+    end
+  end
+
+=== User creation on the fly
+
+  To use the userdata in flickr.auth.token and create
+  an account with it on the fly try following flickr_callback
+  
+  def flickr_callback
+    flickr = Flickr.new('flickr.yml')
+    flickr.auth.frob = params[:frob]
+    if(!logged_in?)
+      # no user yet for this flickr id, create a new user
+      if (current_user = User.find_by_flickr_nsid(flickr.auth.token.user_id))).nil?
+        current_user = User.new do |user|
+          user.login = flickr.auth.token.username
+          user.real_name = flickr.auth.token.user_real_name
+          user.flickr_nsid = flickr.auth.token.user_id
+          user.flickr_token = flickr.auth.token.token
+        end
+      else # we have a user for that flick account, login and update token
+        current_user.flickr_token = flickr.auth.token.token
+      end
+      if(current_user.save)
+        flash[:notice] = 'Registered and logged in via flickr'
+        redirect_to '/'
+      else
+        // probably you validate for the presence of an email address?
+        flash[:error] = 'Logged in via flickr but some user data is missing'
+        @user = current_user
+        render :action => 'users/new'
+      end
+    else
+      current_user.update_attribute :flickr_token, flickr.auth.token.token
     end
   end
 
