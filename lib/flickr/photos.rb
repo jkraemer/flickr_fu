@@ -1,6 +1,8 @@
 class Flickr::Photos < Flickr::Base
+  attr_accessor :extras
   def initialize(flickr)
     @flickr = flickr
+    self.extras ||= %w(license date_upload date_taken owner_name icon_server original_format last_update geo tags machine_tags o_dims views media).join(',')
   end
 
   # Return a list of photos matching some criteria. Only photos visible to the calling user will be returned. To return private or semi-private photos, 
@@ -113,9 +115,12 @@ class Flickr::Photos < Flickr::Base
   #     The page of results to return. If this argument is omitted, it defaults to 1.
   # * media (Optional)
   #     The type of media to search for. 'photo', 'video', or 'both' are allowed arguments, with 'both' being the default.
+  # * extras (Optional)
+  #     Any extra fields of information you want. The default extra fields are defined
+  #     in Flickr::Photos.extras and can be overwritten
   # 
   def search(options)
-    options.merge!({:extras => "license,date_upload,date_taken,owner_name,icon_server,original_format,last_update,geo,tags,machine_tags,o_dims,views,media"})
+    options[:extras] ||= self.extras
 
     rsp = @flickr.send_request('flickr.photos.search', options)
 
@@ -149,7 +154,7 @@ class Flickr::Photos < Flickr::Base
   #     The type of media to search for. 'photo', 'video', or 'both' are allowed arguments, with 'both' being the default.
   # 
   def get_recent(options = {})
-    options.merge!({:extras => "license,date_upload,date_taken,owner_name,icon_server,original_format,last_update,geo,tags,machine_tags,o_dims,views,media"})
+    options[:extras] ||= self.extras
 
     rsp = @flickr.send_request('flickr.photos.getRecent', options)
 
@@ -169,7 +174,7 @@ class Flickr::Photos < Flickr::Base
   end
   
   def interesting(options)
-    options.merge!({:extras => "license,date_upload,date_taken,owner_name,icon_server,original_format,last_update,geo,tags,machine_tags,o_dims,views,media"})
+    options[:extras] ||= self.extras
 
     rsp = @flickr.send_request('flickr.interestingness.getList', options)
 
