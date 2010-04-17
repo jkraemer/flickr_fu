@@ -1,0 +1,3 @@
+2010-04-17: 0.3.1 (tomk32-flickr_fu)
+  * Allows to add extra fields to flickr.photos.search (and other in this flickr.photo)
+    that are requested from flickr. This can be used to e.g. get the original_url quicker.
