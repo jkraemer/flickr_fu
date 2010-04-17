@@ -15,6 +15,11 @@ class Flickr::Photos::Photo
   def initialize(flickr, attributes)
     @flickr = flickr
     attributes.each do |k,v|
+      # necessary for anything that comes via 'extras' or of course
+      # possible future changes in the api returns
+      if ! respond_to?(k)
+        self.class.send(:attr_accessor, k)
+      end
       send("#{k}=", v)
     end
   end

@@ -170,6 +170,20 @@ token_cache: "token_cache.yml"
   
   photos = flickr.photos.search(:user_id => 'your_user_id_here')
 
+== Authenticatd Search Example
+
+  For a few searches you will need to authenticate. E.g. to receive the original_url
+  staight away (and thus saving an extra getInfo call), or to search for the private
+  photos of a user. In order to do so you need to pass the user's token and his
+  flickr_nsid (though the API docs also suggest 'me', both work fine).
+
+  This example appends the :url_o to the extras, mapping it to :original_url:
+
+  flickr.photos.extras << {:url_o => :original_url}
+  photos = flickr.photos.search(:per_page => 5, :page => 1,
+      :user_id => 'me', :privacy_filter => 5, :auth_token => user_token,
+      :safe_search => 3))
+
 == Patch Contributers
 
   Chris Ledet
