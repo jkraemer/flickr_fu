@@ -4,19 +4,20 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = %q{flickr_fu}
+  s.name = %q{tomk32-flickr_fu}
   s.version = "0.3.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = ["Ben Wyrosdick", "Maciej Bilas"]
-  s.date = %q{2010-04-17}
+  s.authors = ["Ben Wyrosdick", "Maciej Bilas", "Thomas R. Koll"]
+  s.date = %q{2010-04-18}
   s.description = %q{Provides a ruby interface to flickr via the REST api}
-  s.email = %q{ben@commonthread.com}
+  s.email = %q{tomk32@gmx.de}
   s.extra_rdoc_files = [
     "README"
   ]
   s.files = [
     ".gitignore",
+     "CHANGELOG",
      "LICENSE",
      "README",
      "Rakefile",
@@ -84,22 +85,22 @@ Gem::Specification.new do |s|
      "spec/spec.opts",
      "spec/spec_helper.rb"
   ]
-  s.homepage = %q{http://github.com/commonthread/flickr_fu}
+  s.homepage = %q{http://github.com/tomk32/flickr_fu}
   s.rdoc_options = ["--main", "README"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.3}
+  s.rubygems_version = %q{1.3.6}
   s.summary = %q{Provides a ruby interface to flickr via the REST api}
   s.test_files = [
-    "spec/spec_helper.rb",
-     "spec/flickr/test_spec.rb",
-     "spec/flickr/geo_spec.rb",
+    "spec/flickr/base_spec.rb",
      "spec/flickr/contacts_spec.rb",
-     "spec/flickr/urls_spec.rb",
      "spec/flickr/errors_spec.rb",
-     "spec/flickr/base_spec.rb",
+     "spec/flickr/geo_spec.rb",
      "spec/flickr/photo_spec.rb",
+     "spec/flickr/photos_spec.rb",
      "spec/flickr/photosets_spec.rb",
-     "spec/flickr/photos_spec.rb"
+     "spec/flickr/test_spec.rb",
+     "spec/flickr/urls_spec.rb",
+     "spec/spec_helper.rb"
   ]
 
   if s.respond_to? :specification_version then
@@ -118,3 +119,4 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<xml-magic>, ["> 0.0.0"])
   end
 end
+
