@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{tomk32-flickr_fu}
-  s.version = "0.3.1"
+  s.version = "0.3.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Ben Wyrosdick", "Maciej Bilas", "Thomas R. Koll"]
@@ -22,7 +22,6 @@ Gem::Specification.new do |s|
      "README",
      "Rakefile",
      "VERSION.yml",
-     "flickr_fu.gemspec",
      "lib/flickr/auth.rb",
      "lib/flickr/base.rb",
      "lib/flickr/comment.rb",
@@ -83,7 +82,8 @@ Gem::Specification.new do |s|
      "spec/flickr/test_spec.rb",
      "spec/flickr/urls_spec.rb",
      "spec/spec.opts",
-     "spec/spec_helper.rb"
+     "spec/spec_helper.rb",
+     "tomk32-flickr_fu.gemspec"
   ]
   s.homepage = %q{http://github.com/tomk32/flickr_fu}
   s.rdoc_options = ["--main", "README"]
