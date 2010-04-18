@@ -65,6 +65,7 @@ class Flickr::Photos::Photo
 	# Retrieving 30 search results means calling the API 31 times if you call getSizes every time.
 	# Mind that you still need to call getSizes if you go out for the original image.
 	if size == :original
+	  return original_url if respond_to?(:original_url) and !original_url.blank?
 	  size_hash[size.to_s].source if size_hash.has_key? size.to_s
 	else
 	  key = "_#{size_key(size.to_sym)}"
