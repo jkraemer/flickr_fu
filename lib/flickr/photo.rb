@@ -2,7 +2,6 @@
 class Flickr::Photos::Photo
   attr_accessor :id, :owner, :secret, :server, :farm, :title, :is_public, :is_friend, :is_family # standard attributes
   attr_accessor :license_id, :uploaded_at, :taken_at, :owner_name, :icon_server, :original_format, :updated_at, :geo, :tags, :machine_tags, :o_dims, :views, :media # extra attributes
-  attr_accessor :info_added, :description, :original_secret, :owner_username, :owner_realname, :url_photopage, :notes # info attributes
   attr_accessor :comments # comment attributes
   
   # create a new instance of a flickr photo.
@@ -22,11 +21,6 @@ class Flickr::Photos::Photo
       end
       send("#{k}=", v)
     end
-  end
-
-  # Alias to image_url method
-  def url(size = :medium)
-    image_url(size)
   end
 
   # returns an instance of Flickr::Photos::Size for the required size
@@ -60,23 +54,24 @@ class Flickr::Photos::Photo
   #       :original - original image, either a jpg, gif or png, depending on source format
   #
   def image_url(size = :medium)
-	# It turns out that flickr always stores all the sizes of the picture even when getSizes call returns otherwise.
-	# Not calling getSizes is also very important for performance reasons.
-	# Retrieving 30 search results means calling the API 31 times if you call getSizes every time.
-	# Mind that you still need to call getSizes if you go out for the original image.
-	if size == :original
-	  return original_url if respond_to?(:original_url) and !original_url.blank?
-	  size_hash[size.to_s].source if size_hash.has_key? size.to_s
-	else
-	  key = "_#{size_key(size.to_sym)}"
-	  key = "" if key == "_"
-	  "http://farm#{farm}.static.flickr.com/#{server}/#{id}_#{secret}#{key}.jpg"
-	end
+    # It turns out that flickr always stores all the sizes of the picture even when getSizes call returns otherwise.
+    # Not calling getSizes is also very important for performance reasons.
+    # Retrieving 30 search results means calling the API 31 times if you call getSizes every time.
+    # Mind that you still need to call getSizes if you go out for the original image.
+    if size == :original
+      return original_url if respond_to?(:original_url) and !original_url.blank?
+      size_hash[size.to_s].source if size_hash.has_key? size.to_s
+    else
+      key = "_#{size_key(size.to_sym)}"
+      key = "" if key == "_"
+      "http://farm#{farm}.static.flickr.com/#{server}/#{id}_#{secret}#{key}.jpg"
+    end
   end
+  alias :url :image_url
 
   def photopage_url
-	# Keeping the same convention as image_url (foo_url)
-	url_photopage
+    # Keeping the same convention as image_url (foo_url)
+    url_photopage
   end
 
   def video_url
@@ -203,16 +198,6 @@ class Flickr::Photos::Photo
     @flickr.send_request('flickr.photos.licenses.setLicense', {:photo_id => self.id, :license_id => license_id}, :post)
     true
   end
-  
-  def description # :nodoc:
-    attach_info
-    @description
-  end
-
-  def original_secret # :nodoc:
-    attach_info
-    @original_secret
-  end
 
   def public?
     is_public == "1"
@@ -224,21 +209,6 @@ class Flickr::Photos::Photo
 
   def family?
     is_family == "1"
-  end
-  
-  def owner_username # :nodoc:
-    attach_info
-    @owner_username
-  end
-
-  def owner_realname # :nodoc:
-    attach_info
-    @owner_realname
-  end
-
-  def url_photopage # :nodoc:
-    attach_info
-    @url_photopage
   end
 
   def comments # :nodoc:
@@ -277,9 +247,11 @@ class Flickr::Photos::Photo
     end
   end
 
-  def notes # :nodoc:
-    attach_info
-    @notes
+  def method_missing(method, *args, &block)
+    if [:description, :original_secret, :owner_username, :owner_realname, :url_photopage, :notes].include?(method.to_sym)
+      @attach_info ||= attach_info
+      return @attach_info[method.to_sym]
+    end
   end
 
   protected
@@ -311,29 +283,28 @@ class Flickr::Photos::Photo
 
   # loads photo info when a field is requested that requires additional info
   def attach_info
-    unless self.info_added
-      rsp = @flickr.send_request('flickr.photos.getInfo', :photo_id => self.id, :secret => self.secret)
+    rsp = @flickr.send_request('flickr.photos.getInfo', :photo_id => self.id, :secret => self.secret)
 
-      self.info_added = true
-      self.description = rsp.photo.description.to_s.strip
-      self.original_secret = rsp.photo[:originalsecret]
-      self.owner_username = rsp.photo.owner[:username]
-      self.owner_realname = rsp.photo.owner[:realname]
-      self.url_photopage = rsp.photo.urls.url.to_s
-      self.comment_count = rsp.photo.comments.to_s.to_i
-
-      self.notes = []
-
-      rsp.photo.notes.note.each do |note|
-        self.notes << Flickr::Photos::Note.new(:id => note[:id],
-		  :note => note.to_s,
-		  :author => note[:author],
-		  :author_name => note[:authorname],
-		  :x => note[:x],
-		  :y => note[:y],
-		  :width => note[:w],
-		  :height => note[:h])
-      end if rsp.photo.notes.note
+    if rsp.photo.notes.note
+      notes = rsp.photo.notes.note.collect do |note|
+        Flickr::Photos::Note.new(:id => note[:id],
+          :note => note.to_s,
+          :author => note[:author],
+          :author_name => note[:authorname],
+          :x => note[:x],
+          :y => note[:y],
+          :width => note[:w],
+          :height => note[:h])
+      end
     end
+    return {
+      :description => rsp.photo.description.to_s.strip,
+      :original_secret => rsp.photo[:originalsecret],
+      :owner_username => rsp.photo.owner[:username],
+      :owner_realname => rsp.photo.owner[:realname],
+      :url_photopage => rsp.photo.urls.url.to_s,
+      :comment_count => rsp.photo.comments.to_s.to_i,
+      :notes => notes
+    }
   end
 end
