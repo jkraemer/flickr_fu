@@ -16,8 +16,7 @@ class Flickr::Photos < Flickr::Base
       :tags => :tags,
       :o_dims => :o_dims,
       :views => :views,
-      :media => :media,
-      :url_o => :original_url
+      :media => :media
     }
   end
 
