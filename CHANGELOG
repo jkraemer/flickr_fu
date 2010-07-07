@@ -1,3 +1,7 @@
+2010-07-07: 0.3.4 (tomk32-flickr_fu)
+  * Added medium640 size (the new 'z' from flickr's brand-new broader layout)
+  * Added attributes for height and width of original
+
 2010-04-22: 0.3.3 (tomk32-flickr_fu)
   * Fixed bug where :extra fields received via photos.search where ignored in Photo
     and an additional API call was made
