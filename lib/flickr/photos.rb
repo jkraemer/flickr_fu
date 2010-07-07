@@ -252,7 +252,9 @@ class Flickr::Photos < Flickr::Base
       :title => :title,
       :ispublic => :is_public,
       :isfriend => :is_friend,
-      :isfamily => :is_family
+      :isfamily => :is_family,
+      :o_width => :width,
+      :o_height => :height
     }.merge(self.extras).each do |flickr_key, photo_key|
       attributes[photo_key] = photo[flickr_key]
     end

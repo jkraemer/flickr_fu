@@ -88,11 +88,13 @@ class Flickr::Photos::Photo
   # * size (Optional)
   #     the size of the image to return. Optional sizes are:
   #       :small - square 75x75
-  #       :thumbnail - 100 on longest side
-  #       :small - 240 on longest side
-  #       :medium - 500 on longest side
-  #       :large - 1024 on longest side (only exists for very large original images)
-  #       :original - original image, either a jpg, gif or png, depending on source format
+  #       :thumbnail  - 100 on longest side
+  #       :small      - 240 on longest side
+  #       :medium     - 500 on longest side
+  #       :medium_500 - 500 on the longest side
+  #       :medium_640 - 640 on the longest side
+  #       :large      - 1024 on longest side (only exists for very large original images)
+  #       :original   - original image, either a jpg, gif or png, depending on source format
   # 
   def save_as(filename, size = :medium)
     format = size.to_sym == :original ? (self.original_format || 'jpg') : 'jpg'
@@ -275,6 +277,8 @@ class Flickr::Photos::Photo
     when :thumb, :thumbnail then 't'
     when :small then 'm'
     when :medium then ''
+    when :medium_500 then ''
+    when :medium_640 then 'z'
     when :large then 'b'
     when :original then 'o'
     else ''
