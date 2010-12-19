@@ -102,9 +102,23 @@ class Flickr::Uploader < Flickr::Base
   protected
 
   def upload_options(options)
-    upload_options = { :api_key => @flickr.api_key }
-    upload_options.merge!({:title => options[:title], :description => options[:description], :tags => options[:tags]})
-    [ :is_public, :is_friend, :is_family, :async ].each { |key| upload_options[key] = options[key] ? '1' : '0' }
+    upload_options = {
+      :is_public => '0', :is_friend => '0', :is_family => '0',
+      :title => options[:title], :description => options[:description],
+      :tags => options[:tags]
+    }
+    
+    case options[:privacy]
+      when :friends
+        upload_options[:is_friend] = '1'
+      when :family
+        upload_options[:is_family] = '1'
+      when :friends_and_family
+        upload_options[:is_friend] = '1'
+        upload_options[:is_family] = '1'
+      when :public
+        upload_options[:is_public] = '1'
+    end
 
     upload_options[:safety_level] = case options[:safety_level]
       when :safe then '1'
@@ -118,7 +132,8 @@ class Flickr::Uploader < Flickr::Base
       when :other then '3'
     end if options.has_key?(:content_type)
 
-    upload_options[:hidden] = options.has_key?(:hidden) ? '2' : '1'
+    upload_options[:async] = options[:async] ? '1' : '0'
+    upload_options[:hidden] = options[:hidden] ? '2' : '1'
     upload_options
   end
 end
